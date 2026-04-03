@@ -1,4 +1,4 @@
 {
   "parent": "minecraft:block/cube_all",
-  "textures": { "all": "minecraft:block/glowstone" }
+  "textures": { "all": "gpio_bridge:block/channel_out_on" }
 }
