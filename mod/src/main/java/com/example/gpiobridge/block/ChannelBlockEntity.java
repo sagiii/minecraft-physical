@@ -2,6 +2,7 @@ package com.example.gpiobridge.block;
 
 import com.example.gpiobridge.ModBlockEntityTypes;
 import com.example.gpiobridge.network.MqttBridgeClient;
+import com.example.gpiobridge.screen.ChannelScreenData;
 import com.example.gpiobridge.screen.ChannelScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.Block;
@@ -22,7 +23,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<BlockPos> {
+public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<ChannelScreenData> {
 
     private int channel = 0; // 0 = unset, 1-99 = active
 
@@ -124,7 +125,9 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
     // ----- screen factory -----
 
     @Override
-    public BlockPos getScreenOpeningData(ServerPlayerEntity player) { return pos; }
+    public ChannelScreenData getScreenOpeningData(ServerPlayerEntity player) {
+        return new ChannelScreenData(pos, channel);
+    }
 
     @Override
     public Text getDisplayName() {

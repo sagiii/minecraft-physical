@@ -37,7 +37,7 @@ public class ChannelScreen extends HandledScreen<ChannelScreenHandler> {
                 Text.translatable("gui.gpio_bridge.channel_label")
         );
         channelField.setMaxLength(2);
-        channelField.setText(String.valueOf(handler.getChannel() == 0 ? 1 : handler.getChannel()));
+        channelField.setText(String.valueOf(handler.initialChannel == 0 ? 1 : handler.initialChannel));
         channelField.setFocused(true);
         addDrawableChild(channelField);
 
