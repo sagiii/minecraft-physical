@@ -57,15 +57,39 @@ minecraft-physical/
 
 MQTT通信の中継役となるブローカーです。
 
+**macOS:**
+
 ```bash
-# macOS
 brew install mosquitto
 brew services start mosquitto
+```
 
-# Ubuntu / Debian
+**Ubuntu / Debian:**
+
+```bash
 sudo apt install mosquitto
 sudo systemctl start mosquitto
 ```
+
+**Windows:**
+
+1. [mosquitto.org/download](https://mosquitto.org/download/) から Windows用インストーラー (`mosquitto-2.x.x-install-windows-x64.exe`) をダウンロード
+2. インストーラーを実行（デフォルト設定でOK）
+3. サービスとして自動起動されます。手動で起動する場合:
+
+```powershell
+# PowerShell (管理者)
+net start mosquitto
+
+# または
+mosquitto -v
+```
+
+> **Windowsファイアウォールの設定**
+> インストール時にファイアウォールの許可ダイアログが出たら「許可」してください。
+> 出なかった場合は「Windowsセキュリティ」→「ファイアウォール」→「アプリを許可」から `mosquitto` を追加します。
+
+---
 
 PCのIPアドレスをメモしておきます（M5Stackから接続するために使います）。
 
@@ -77,6 +101,13 @@ ipconfig getifaddr en0
 hostname -I | awk '{print $1}'
 ```
 
+```powershell
+# Windows (PowerShell)
+(Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias Wi-Fi).IPAddress
+# または
+ipconfig  # 「ワイヤレスLANアダプター Wi-Fi」のIPv4アドレスを確認
+```
+
 ---
 
 ### Step 2: Fabric MOD をビルド・導入
@@ -84,8 +115,15 @@ hostname -I | awk '{print $1}'
 **ビルド:**
 
 ```bash
+# macOS / Linux
 cd mod
 ./gradlew build
+```
+
+```powershell
+# Windows (PowerShell)
+cd mod
+.\gradlew.bat build
 ```
 
 `mod/build/libs/gpio-bridge-1.0.0.jar` が生成されます。
@@ -95,9 +133,14 @@ cd mod
 生成されたJARファイルをMinecraftの `mods/` フォルダにコピーします。
 
 ```
-# macOS の場合
+# macOS
 ~/Library/Application Support/minecraft/mods/
+
+# Windows
+%APPDATA%\.minecraft\mods\
 ```
+
+エクスプローラーのアドレスバーに `%APPDATA%\.minecraft\mods` と入力すると直接開けます。
 
 **設定ファイル** (`config/gpio_bridge.json`) は初回起動時に自動生成されます。
 PCでMinecraftを動かす場合はデフォルト設定のままで動作します。
@@ -220,3 +263,5 @@ while True:
 | LEDが光らない | MinecraftのチャンネルOUTブロックとM5Stackのチャンネル番号が一致しているか確認 |
 | MinecraftでINブロックが反応しない | M5Stackがコンソールにエラーを出していないか確認 |
 | MODが読み込まれない | Fabric Loaderが導入済みか / JARがmods/フォルダにあるか確認 |
+| (Windows) M5StackがMQTTに繋がらない | ファイアウォールでMosquittoのポート1883が許可されているか確認。`telnet 192.168.x.x 1883` で疎通確認 |
+| (Windows) `gradlew.bat` が動かない | Java 21がインストールされているか確認。[Adoptium](https://adoptium.net/) からJava 21をインストール |
