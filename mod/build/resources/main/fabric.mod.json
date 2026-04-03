@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "gpio_bridge",
+  "version": "1.0.0",
+  "name": "GPIO Bridge",
+  "description": "Connects Minecraft redstone to M5Stack devices via MQTT",
+  "authors": [],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main":   ["com.example.gpiobridge.GpioBridgeMod"],
+    "client": ["com.example.gpiobridge.GpioBridgeModClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api":   "*",
+    "minecraft":    "~1.21.4",
+    "java":         ">=21"
+  }
+}

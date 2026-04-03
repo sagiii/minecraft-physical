@@ -13,6 +13,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.block.WireOrientation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,7 +45,7 @@ public class ChannelOutBlock extends BlockWithEntity {
 
     @Override
     protected void neighborUpdate(BlockState state, World world, BlockPos pos,
-                                   Block sourceBlock, @Nullable net.minecraft.block.WireOrientation wireOrientation,
+                                   Block sourceBlock, @Nullable WireOrientation wireOrientation,
                                    boolean notify) {
         if (world.isClient) return;
         boolean powered = world.isReceivingRedstonePower(pos);

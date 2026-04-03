@@ -4,6 +4,7 @@ import com.example.gpiobridge.ModBlockEntityTypes;
 import com.example.gpiobridge.network.MqttBridgeClient;
 import com.example.gpiobridge.screen.ChannelScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
