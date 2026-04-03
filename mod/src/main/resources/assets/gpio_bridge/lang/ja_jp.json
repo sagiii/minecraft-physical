@@ -1,0 +1,7 @@
+{
+  "block.gpio_bridge.channel_in":  "チャンネルINブロック",
+  "block.gpio_bridge.channel_out": "チャンネルOUTブロック",
+  "gui.gpio_bridge.channel_title": "チャンネル設定",
+  "gui.gpio_bridge.channel_label": "チャンネル番号 (1-99):",
+  "gui.gpio_bridge.channel_hint":  "Ch: %d"
+}

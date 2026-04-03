@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "gpio_bridge:block/channel_in_off" },
+    "powered=true":  { "model": "gpio_bridge:block/channel_in_on"  }
+  }
+}
