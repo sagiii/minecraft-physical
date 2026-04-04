@@ -36,7 +36,6 @@ BUTTON_A = 37   # 前面ボタン (LOW=押下)
 led   = Pin(LED_PIN,  Pin.OUT, value=1)
 btn_a = Pin(BUTTON_A, Pin.IN)
 
-send_state = False
 client = None
 
 
@@ -116,16 +115,15 @@ while True:
         prev_a = btn_a.value()
         continue
 
-    # ボタンA: 押した瞬間（立ち下がり）にトグル送信
+    # ボタンA: 押す=ON、離す=OFF
     cur_a = btn_a.value()
-    if prev_a == 1 and cur_a == 0:
-        send_state = not send_state
-        payload = b'1' if send_state else b'0'
+    if cur_a != prev_a:
+        payload = b'1' if cur_a == 0 else b'0'   # LOW=押下
         topic   = ('minecraft/ch/%d/input' % CH_SEND).encode()
         if client:
             try:
                 client.publish(topic, payload)
-                show('send ch%d' % CH_SEND, 'ON' if send_state else 'OFF')
+                show('send ch%d' % CH_SEND, 'ON' if cur_a == 0 else 'OFF')
             except Exception as e:
                 show('send ERR', str(e))
                 connect_mqtt()
