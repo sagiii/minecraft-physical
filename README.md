@@ -12,6 +12,12 @@ MinecraftのレッドストーンとM5StackデバイスをMQTTで双方向にブ
 
 ---
 
+| ブロックを設置してチャンネル設定 | M5Stack ↔ Minecraft 双方向通信 | Minecraft経由でループ！ |
+|:---:|:---:|:---:|
+| ![set blocks](README.images/set_blocks.gif) | ![test io](README.images/test_io.gif) | ![loop test](README.images/loop_test.gif) |
+
+---
+
 ## 構成
 
 ```
