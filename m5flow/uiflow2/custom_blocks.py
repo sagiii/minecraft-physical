@@ -39,6 +39,12 @@ class MinecraftBridge:
         if self._bridge:
             self._bridge.send(int(channel), bool(value))
 
+    def get_value(self, channel):
+        """%1 get value of channel %2"""
+        if self._bridge:
+            return self._bridge.get_value(int(channel))
+        return False
+
     def on_channel(self, channel, callback):
         """%1 when channel %2 received call %3"""
         if self._bridge:

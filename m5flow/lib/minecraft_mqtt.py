@@ -45,6 +45,7 @@ class MinecraftBridge:
         self._client_id = client_id
         self._client = None
         self._callbacks = {}   # channel(int) -> callable(bool)
+        self._values = {}      # channel(int) -> bool  (最後に受信した値)
         self._connected = False
 
     # ------------------------------------------------------------------
@@ -85,6 +86,17 @@ class MinecraftBridge:
     # ------------------------------------------------------------------
     # チャンネル登録 / 送受信
     # ------------------------------------------------------------------
+
+    def get_value(self, channel):
+        """
+        指定チャンネルの最後に受信した値を返す。
+
+        Args:
+            channel (int): チャンネル番号 (1-99)
+        Returns:
+            bool: ON=True / OFF=False。未受信の場合は False。
+        """
+        return self._values.get(int(channel), False)
 
     def on_channel(self, channel, callback):
         """
@@ -136,6 +148,7 @@ class MinecraftBridge:
             if len(parts) == 4 and parts[0] == 'minecraft' and parts[3] == 'state':
                 channel = int(parts[2])
                 value   = (msg == b'1')
+                self._values[channel] = value
                 cb = self._callbacks.get(channel)
                 if cb:
                     cb(value)
