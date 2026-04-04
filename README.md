@@ -1,3 +1,5 @@
+*このプロジェクトはスクリーンショット/動画素材/UIFlowサンプル以外、すべてClaude Codeがつくりました。*
+
 # minecraft-physical
 
 MinecraftのレッドストーンとM5StackデバイスをMQTTで双方向にブリッジするFabric MODプロジェクト。
