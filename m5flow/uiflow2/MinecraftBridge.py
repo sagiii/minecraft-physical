@@ -8,13 +8,13 @@ How to register in UIFlow v2:
 4. "MinecraftBridge" category appears in the block panel
 
 Requirements:
-- lib/minecraft_mqtt.py must be uploaded to M5Stack
-  (UIFlow v2 "Files" tab -> place in /flash/lib/ folder)
+- libs/minecraft_mqtt.py must be uploaded to M5Stack
+  (UIFlow v2 "Files" tab -> place in /flash/libs/ folder)
 """
 
 import sys
 sys.path.append('/flash')
-from lib.minecraft_mqtt import MinecraftBridge as _Bridge
+from libs.minecraft_mqtt import MqttBridge as _Bridge
 
 
 class MinecraftBridge:

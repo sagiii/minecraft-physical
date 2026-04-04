@@ -9,8 +9,8 @@ umqtt.simple は MicroPython 標準内蔵なので追加インストール不要
   minecraft/ch/{n}/input   M5Stack → Minecraft INブロック   (送信)
 
 使い方 (クラス版):
-    from lib.minecraft_mqtt import MinecraftBridge
-    mc = MinecraftBridge('192.168.1.10')
+    from libs.minecraft_mqtt import MqttBridge
+    mc = MqttBridge('192.168.1.10')
     mc.connect_wifi('MySSID', 'password')
     mc.connect_mqtt()
     mc.on_channel(1, lambda v: print('ch1:', v))
@@ -18,7 +18,7 @@ umqtt.simple は MicroPython 標準内蔵なので追加インストール不要
         mc.check()
 
 使い方 (関数版 / UIFlow向け):
-    from lib.minecraft_mqtt import mc_setup, mc_send, mc_on, mc_check
+    from libs.minecraft_mqtt import mc_setup, mc_send, mc_on, mc_check
     mc_setup('MySSID', 'password', '192.168.1.10')
     mc_on(1, lambda v: print('ch1:', v))
     # ループ内で mc_check() を呼ぶ
@@ -33,7 +33,7 @@ except ImportError:
     from umqtt.robust import MQTTClient
 
 
-class MinecraftBridge:
+class MqttBridge:
     """Minecraft MQTT ブリッジのコアクラス。"""
 
     TOPIC_STATE = 'minecraft/ch/{}/state'   # 受信用トピック
@@ -161,7 +161,7 @@ class MinecraftBridge:
 # UIFlow v2 の Custom ブロックからこれらの関数を呼ぶ。
 # ======================================================================
 
-_bridge: MinecraftBridge = None  # type: ignore
+_bridge: MqttBridge = None  # type: ignore
 
 
 def mc_setup(broker_ip: str, broker_port: int = 1883, ssid: str = None, password: str = None):
@@ -178,7 +178,7 @@ def mc_setup(broker_ip: str, broker_port: int = 1883, ssid: str = None, password
         password   (str): WiFi のパスワード (省略可)
     """
     global _bridge
-    _bridge = MinecraftBridge(broker_ip, broker_port)
+    _bridge = MqttBridge(broker_ip, broker_port)
     if ssid and password:
         _bridge.connect_wifi(ssid, password)
     elif not network.WLAN(network.STA_IF).isconnected():

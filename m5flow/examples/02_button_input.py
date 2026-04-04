@@ -31,7 +31,7 @@ from machine import Pin
 import time
 import sys
 sys.path.append('/flash')
-from lib.minecraft_mqtt import mc_setup, mc_send, mc_check
+from libs.minecraft_mqtt import mc_setup, mc_send, mc_check
 
 # ボタンの初期化 (内蔵プルアップ、押すとLOW)
 btn = Pin(BTN_PIN, Pin.IN, Pin.PULL_UP)

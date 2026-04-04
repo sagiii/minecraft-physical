@@ -33,8 +33,8 @@ hostname -I | awk '{print $1}'
 1. UIFlow v2 (flow2.m5stack.com) を開く
 2. デバイスを接続する
 3. 左パネルの「Files」タブを開く
-4. `/flash/lib/` フォルダを作成
-5. `m5flow/lib/minecraft_mqtt.py` をアップロード
+4. `/flash/libs/` フォルダを作成
+5. `m5flow/libs/minecraft_mqtt.py` をアップロード
 
 ## Step 3: サンプルプログラムを書き込む
 

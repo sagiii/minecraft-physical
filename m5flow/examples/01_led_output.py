@@ -29,7 +29,7 @@ LED_PIN       = 10                # LED の GPIO ピン番号
 from machine import Pin
 import sys
 sys.path.append('/flash')
-from lib.minecraft_mqtt import mc_setup, mc_on, mc_check
+from libs.minecraft_mqtt import mc_setup, mc_on, mc_check
 
 # LED の初期化
 led = Pin(LED_PIN, Pin.OUT)

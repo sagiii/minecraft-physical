@@ -37,7 +37,7 @@ from machine import Pin
 import time
 import sys
 sys.path.append('/flash')
-from lib.minecraft_mqtt import mc_setup, mc_on, mc_send, mc_check
+from libs.minecraft_mqtt import mc_setup, mc_on, mc_send, mc_check
 
 # ハードウェア初期化
 led = Pin(LED_PIN, Pin.OUT)
