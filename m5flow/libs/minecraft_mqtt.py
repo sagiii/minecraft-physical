@@ -47,6 +47,7 @@ class MqttBridge:
         self._callbacks = {}   # channel(int) -> callable(bool)
         self._values = {}      # channel(int) -> bool  (最後に受信した値)
         self._connected = False
+        self._last_ping = 0
 
     # ------------------------------------------------------------------
     # 接続
@@ -133,6 +134,10 @@ class MqttBridge:
             return
         try:
             self._client.check_msg()
+            now = time.ticks_ms()
+            if time.ticks_diff(now, self._last_ping) > 20000:
+                self._client.ping()
+                self._last_ping = now
         except Exception as e:
             print('[Minecraft] 受信エラー:', e)
 
