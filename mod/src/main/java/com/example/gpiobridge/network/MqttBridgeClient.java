@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   minecraft/ch/{n}/state  — OUT block → M5Stack  (we publish)
  *   minecraft/ch/{n}/input  — M5Stack → IN block   (we subscribe)
  *
- * Channel conflict rule: if a channel is registered as IN, OUT is ignored.
+ * IN and OUT channels are independent — the same channel number can be used for both.
  */
 public class MqttBridgeClient {
     public static final MqttBridgeClient INSTANCE = new MqttBridgeClient();
@@ -94,11 +94,9 @@ public class MqttBridgeClient {
 
     public void registerIn(int channel, BlockPos pos) {
         inChannels.put(channel, pos);
-        outChannels.remove(channel); // IN wins
     }
 
     public void registerOut(int channel, BlockPos pos) {
-        if (inChannels.containsKey(channel)) return; // IN has priority
         outChannels.put(channel, pos);
     }
 
@@ -110,7 +108,6 @@ public class MqttBridgeClient {
     // ----- publishing -----
 
     public void publish(int channel, boolean value) {
-        if (inChannels.containsKey(channel)) return; // Never publish from an IN channel
         if (client == null || !client.isConnected()) return;
         String topic   = "minecraft/ch/" + channel + "/state";
         String payload = value ? "1" : "0";

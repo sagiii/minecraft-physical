@@ -151,20 +151,25 @@ class MinecraftBridge:
 _bridge: MinecraftBridge = None  # type: ignore
 
 
-def mc_setup(ssid: str, password: str, broker_ip: str, broker_port: int = 1883):
+def mc_setup(broker_ip: str, broker_port: int = 1883, ssid: str = None, password: str = None):
     """
     [ブロック: セットアップ]
-    WiFi と MQTT ブローカーに接続する。プログラムの最初に一度だけ呼ぶ。
+    MQTT ブローカーに接続する。プログラムの最初に一度だけ呼ぶ。
+    ssid/password を指定した場合のみ WiFi 接続を行う。
+    すでに WiFi に接続済みの場合は ssid/password を省略できる。
 
     Args:
-        ssid       (str): WiFi のSSID
-        password   (str): WiFi のパスワード
         broker_ip  (str): PC の IP アドレス (Mosquitto が動いている PC)
         broker_port(int): MQTTポート番号 (通常は 1883)
+        ssid       (str): WiFi のSSID (省略可)
+        password   (str): WiFi のパスワード (省略可)
     """
     global _bridge
     _bridge = MinecraftBridge(broker_ip, broker_port)
-    _bridge.connect_wifi(ssid, password)
+    if ssid and password:
+        _bridge.connect_wifi(ssid, password)
+    elif not network.WLAN(network.STA_IF).isconnected():
+        raise RuntimeError('[Minecraft] WiFi未接続です。ssidとpasswordを指定してください。')
     _bridge.connect_mqtt()
 
 

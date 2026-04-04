@@ -39,7 +39,7 @@ minecraft-physical/
 | `minecraft/ch/{n}/state` | Minecraft → M5Stack | OUTブロックの状態変化 |
 | `minecraft/ch/{n}/input` | M5Stack → Minecraft | INブロックへの入力 |
 
-**チャンネル番号** (1〜99) でMinecraftのブロックとM5Stack上の処理を対応付けます。同じ番号にINとOUTが両方設定された場合はINが優先されます。
+**チャンネル番号** (1〜99) でMinecraftのブロックとM5Stack上の処理を対応付けます。INとOUTは独立しており、同じ番号をINとOUTの両方に設定しても問題ありません。
 
 ---
 
