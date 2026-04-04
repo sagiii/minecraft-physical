@@ -246,11 +246,36 @@ while True:
 
 ### UIFlow v2 カスタムブロックとして使う
 
-`m5flow/uiflow2/custom_blocks.py` の内容をUIFlow v2のCustomブロックエディタに貼り付けると、ビジュアルブロックとして使えます。
+#### 事前準備: WiFi設定の書き込み
 
-1. UIFlow v2 → Custom タブ → New Block → Python
-2. `custom_blocks.py` の内容を貼り付けて保存
-3. ブロックパネルにMinecraftカテゴリが追加される
+UIFlow Burner でファームウェアを焼く際に、WiFi の SSID とパスワードを書き込んでおいてください。
+こうすることでプログラムとWiFi設定を分離でき、プロジェクトファイルに認証情報が含まれません。
+
+#### カスタムブロックの登録
+
+`m5flow/uiflow2/MinecraftBridge.py` をUIFlow v2のCustomブロックエディタで登録すると、ビジュアルブロックとして使えます。
+
+1. UIFlow v2 の Files タブ → `/flash/libs/` に `minecraft_mqtt.py` をアップロード
+2. UIFlow v2 の Files タブ → `/flash/` に `MinecraftBridge.py` をアップロード
+3. UIFlow v2 → Custom タブ → Block Designer → Python に `MinecraftBridge.py` を貼り付け → Update Blocks → Save .m5b2
+4. Custom タブ → Load で保存した `.m5b2` を読み込む
+5. ブロックパネルに MinecraftBridge カテゴリが追加される
+
+#### サンプルプロジェクト
+
+`m5flow/examples/minecraft-uiflow.m5f2` をUIFlow v2で開くとすぐに試せます。
+
+![UIFlow サンプルプロジェクト](README.images/uiflow_screenshot.png)
+
+**動作内容:**
+
+| 操作 | 動き |
+|---|---|
+| BtnA 押す/離す | チャンネル1 に ON/OFF を送信 → Minecraft の IN ブロックが反応 |
+| BtnB 押す/離す | チャンネル2 に ON/OFF を送信 → Minecraft の IN ブロックが反応 |
+| チャンネル2 の state 受信 | LED が点灯/消灯 |
+
+**実行前に必ず確認:** プロジェクト内のブローカー IP が `xxx.xxx.xxx.xxx` になっているので、自分の PC の IP アドレスに書き換えてください。
 
 ---
 
