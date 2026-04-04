@@ -123,6 +123,7 @@ class MqttBridge:
         payload = b'1' if value else b'0'
         try:
             self._client.publish(topic, payload)
+            print('[Minecraft] send channel %d %s' % (int(channel), 'ON' if value else 'OFF'))
         except Exception as e:
             print('[Minecraft] 送信エラー:', e)
 
@@ -154,6 +155,7 @@ class MqttBridge:
                 channel = int(parts[2])
                 value   = (msg == b'1')
                 self._values[channel] = value
+                print('[Minecraft] recv channel %d %s' % (channel, 'ON' if value else 'OFF'))
                 cb = self._callbacks.get(channel)
                 if cb:
                     cb(value)
