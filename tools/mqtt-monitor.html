@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Physical チャンネルモニター</title>
+  <!--
+    ============================================================
+    Mosquitto に WebSocket サポートを追加する設定:
+    /opt/homebrew/etc/mosquitto/mosquitto.conf (macOS/brew) に追記:
+
+      listener 1883
+      listener 9001
+      protocol websockets
+      allow_anonymous true
+
+    その後: brew services restart mosquitto
+    スマホからアクセスする場合: ?broker=ws://PCのLAN-IP:9001
+    例: http://192.168.1.5:8080/tools/mqtt-monitor.html?broker=ws://192.168.1.5:9001
+    ============================================================
+  -->
+  <style>
+    :root {
+      --bg:               #0f172a;
+      --surface:          #1e293b;
+      --border:           #334155;
+      --text:             #e2e8f0;
+      --text-muted:       #94a3b8;
+
+      --input-on:         #3b82f6;
+      --input-on-text:    #eff6ff;
+      --input-off:        #1e3a5f;
+      --input-off-text:   #60a5fa;
+      --input-border-off: #1e40af;
+
+      --output-on:        #ef4444;
+      --output-on-text:   #fff1f2;
+      --output-off:       #4c1d1d;
+      --output-off-text:  #fca5a5;
+      --output-border-off:#991b1b;
+
+      --cell-size:        52px;
+      --cell-font:        0.8rem;
+      --cell-gap:         4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    /* ---- Header ---- */
+    header { margin-bottom: 24px; }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #f8fafc;
+    }
+
+    .connection-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .connection-bar input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      width: 230px;
+    }
+
+    .connection-bar button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .connection-bar button:hover        { background: #1d4ed8; }
+    .connection-bar button.connected    { background: #dc2626; }
+    .connection-bar button.connected:hover { background: #b91c1c; }
+
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #475569;
+      flex-shrink: 0;
+    }
+    .status-dot.connecting { background: #f59e0b; }
+    .status-dot.connected  { background: #22c55e; animation: blink 2s infinite; }
+    .status-dot.error      { background: #ef4444; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .status-text { font-size: 0.875rem; color: var(--text-muted); }
+
+    /* ---- Sections ---- */
+    .channel-section { margin-bottom: 28px; }
+
+    .channel-section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .input-section  .badge { background: #1e3a5f; color: #93c5fd; }
+    .output-section .badge { background: #4c1d1d; color: #fca5a5; }
+
+    /* ---- Grid ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, var(--cell-size));
+      gap: var(--cell-gap);
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--cell-font);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s, box-shadow 0.12s;
+      border: 1px solid transparent;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cell:active { transform: scale(0.88); }
+
+    /* INPUT */
+    .input-section .cell.off {
+      background: var(--input-off);
+      color: var(--input-off-text);
+      border-color: var(--input-border-off);
+    }
+    .input-section .cell.off:hover { filter: brightness(1.3); }
+    .input-section .cell.on {
+      background: var(--input-on);
+      color: var(--input-on-text);
+      box-shadow: 0 0 10px #3b82f699;
+    }
+
+    /* OUTPUT */
+    .output-section .cell.off {
+      background: var(--output-off);
+      color: var(--output-off-text);
+      border-color: var(--output-border-off);
+    }
+    .output-section .cell.off:hover { filter: brightness(1.3); }
+    .output-section .cell.on {
+      background: var(--output-on);
+      color: var(--output-on-text);
+      box-shadow: 0 0 10px #ef444499;
+    }
+
+    /* Placeholder (ch 100 - unused) */
+    .cell.placeholder {
+      background: transparent;
+      border: 1px dashed var(--border);
+      cursor: default;
+    }
+    .cell.placeholder:hover { filter: none; }
+
+    /* ---- Log ---- */
+    details.log-section { margin-top: 8px; }
+    details summary {
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      padding: 4px 0;
+      user-select: none;
+    }
+    #log {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 8px;
+      height: 160px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.75rem;
+    }
+    .log-pub { color: #86efac; }
+    .log-sub { color: #67e8f9; }
+    .log-sys { color: #fbbf24; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 580px) {
+      :root { --cell-size: 30px; --cell-font: 0.6rem; --cell-gap: 2px; }
+      body { padding: 10px; }
+      h1 { font-size: 1rem; }
+      .cell { border-radius: 4px; }
+      .connection-bar input { width: 180px; }
+    }
+    @media (min-width: 581px) and (max-width: 780px) {
+      :root { --cell-size: 40px; --cell-font: 0.7rem; --cell-gap: 3px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Minecraft Physical チャンネルモニター</h1>
+  <div class="connection-bar">
+    <input id="brokerUrl" type="text" placeholder="ws://ホスト:9001">
+    <button id="connectBtn" onclick="toggleConnect()">接続</button>
+    <span id="statusDot" class="status-dot"></span>
+    <span id="statusText" class="status-text">未接続</span>
+  </div>
+</header>
+
+<main>
+  <section class="channel-section input-section">
+    <h2>INPUT チャンネル <span class="badge">UIFlow → Minecraft</span></h2>
+    <div class="grid" id="inputGrid"></div>
+  </section>
+
+  <section class="channel-section output-section">
+    <h2>OUTPUT チャンネル <span class="badge">Minecraft → UIFlow</span></h2>
+    <div class="grid" id="outputGrid"></div>
+  </section>
+
+  <details class="log-section">
+    <summary>通信ログ</summary>
+    <div id="log"></div>
+  </details>
+</main>
+
+<!-- mqtt.js (WebSocket MQTT client) -->
+<script src="https://unpkg.com/mqtt@4/dist/mqtt.min.js"></script>
+<script>
+// ============================================================
+// 設定 — ここを変えると動作を調整できる
+// ============================================================
+const MAX_CHANNEL  = 99;   // チャンネル番号の最大値
+const PULSE_MS     = 500;  // 左クリック/タップ時のON幅 (ms)
+const LOG_MAX_ROWS = 200;  // ログの最大保持行数
+const LONG_PRESS_MS = 600; // 長押し認定までの時間 (ms, モバイル用トグル)
+
+const TOPIC_INPUT  = (ch) => `minecraft/ch/${ch}/input`;
+const TOPIC_OUTPUT = (ch) => `minecraft/ch/${ch}/state`;
+
+// ============================================================
+// 状態 — type: 'input' | 'output', ch: 1〜MAX_CHANNEL
+// ============================================================
+const channelState = {
+  input:  new Array(MAX_CHANNEL + 1).fill(0),
+  output: new Array(MAX_CHANNEL + 1).fill(0),
+};
+
+// ============================================================
+// MQTT
+// ============================================================
+let mqttClient = null;
+
+function toggleConnect() {
+  if (mqttClient && mqttClient.connected) {
+    mqttClient.end();
+    return;
+  }
+  const url = document.getElementById('brokerUrl').value.trim();
+  if (!url) return;
+
+  setStatus('connecting', '接続中…');
+  mqttClient = mqtt.connect(url, { reconnectPeriod: 5000, connectTimeout: 10000 });
+
+  mqttClient.on('connect', () => {
+    setStatus('connected', '接続済み');
+    document.getElementById('connectBtn').textContent = '切断';
+    document.getElementById('connectBtn').className   = 'connected';
+    mqttClient.subscribe('minecraft/ch/+/input');
+    mqttClient.subscribe('minecraft/ch/+/state');
+    addLog('sys', `接続: ${url}`);
+  });
+
+  mqttClient.on('message', (topic, message) => {
+    const m = topic.match(/^minecraft\/ch\/(\d+)\/(input|state)$/);
+    if (!m) return;
+    const ch   = parseInt(m[1]);
+    const type = m[2] === 'input' ? 'input' : 'output';
+    const val  = parseInt(message.toString()) ? 1 : 0;
+    if (ch >= 1 && ch <= MAX_CHANNEL) {
+      channelState[type][ch] = val;
+      renderCell(type, ch);
+      addLog('sub', `${topic}: ${val}`);
+    }
+  });
+
+  mqttClient.on('close', () => {
+    setStatus('', '未接続');
+    document.getElementById('connectBtn').textContent = '接続';
+    document.getElementById('connectBtn').className   = '';
+    addLog('sys', '切断');
+  });
+
+  mqttClient.on('error', (err) => {
+    setStatus('error', 'エラー');
+    addLog('sys', `エラー: ${err.message}`);
+  });
+}
+
+function publish(topic, value) {
+  if (!mqttClient || !mqttClient.connected) return;
+  mqttClient.publish(topic, String(value), { retain: false });
+  addLog('pub', `${topic}: ${value}`);
+}
+
+// ============================================================
+// セルの操作
+// ============================================================
+
+// 左クリック / タップ: パルス (ON → 500ms → OFF)
+function doPulse(type, ch) {
+  const topic = type === 'input' ? TOPIC_INPUT(ch) : TOPIC_OUTPUT(ch);
+  channelState[type][ch] = 1;
+  renderCell(type, ch);
+  publish(topic, 1);
+  setTimeout(() => {
+    channelState[type][ch] = 0;
+    renderCell(type, ch);
+    publish(topic, 0);
+  }, PULSE_MS);
+}
+
+// 右クリック / 長押し: トグル
+function doToggle(type, ch) {
+  const topic  = type === 'input' ? TOPIC_INPUT(ch) : TOPIC_OUTPUT(ch);
+  const newVal = channelState[type][ch] ? 0 : 1;
+  channelState[type][ch] = newVal;
+  renderCell(type, ch);
+  publish(topic, newVal);
+}
+
+// ============================================================
+// グリッド構築
+// ============================================================
+function buildGrid(type) {
+  const grid = document.getElementById(type + 'Grid');
+
+  for (let ch = 1; ch <= 100; ch++) {
+    const cell = document.createElement('div');
+
+    if (ch > MAX_CHANNEL) {
+      // 余り枠 (ch100) — 空白
+      cell.className = 'cell placeholder';
+      grid.appendChild(cell);
+      continue;
+    }
+
+    cell.className = 'cell off';
+    cell.textContent = ch;
+    cell.id = `cell-${type}-${ch}`;
+
+    // --- マウス操作 ---
+    cell.addEventListener('click', () => doPulse(type, ch));
+    cell.addEventListener('contextmenu', (e) => { e.preventDefault(); doToggle(type, ch); });
+
+    // --- タッチ操作 (モバイル) ---
+    // タップ → パルス、長押し → トグル
+    let pressTimer  = null;
+    let didLongPress = false;
+
+    cell.addEventListener('touchstart', () => {
+      didLongPress = false;
+      pressTimer = setTimeout(() => {
+        didLongPress = true;
+        doToggle(type, ch);
+      }, LONG_PRESS_MS);
+    }, { passive: true });
+
+    cell.addEventListener('touchend', (e) => {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      if (didLongPress) {
+        // 長押し済み → click イベントをキャンセル
+        e.preventDefault();
+      }
+      // 短タップは通常の click イベントに任せる
+      didLongPress = false;
+    });
+
+    cell.addEventListener('touchmove', () => {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }, { passive: true });
+
+    grid.appendChild(cell);
+  }
+}
+
+function renderCell(type, ch) {
+  const cell = document.getElementById(`cell-${type}-${ch}`);
+  if (!cell) return;
+  cell.className = 'cell ' + (channelState[type][ch] ? 'on' : 'off');
+}
+
+// ============================================================
+// ステータス表示
+// ============================================================
+function setStatus(cls, text) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (cls ? ' ' + cls : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+// ============================================================
+// ログ
+// ============================================================
+let logRowCount = 0;
+
+function addLog(type, text) {
+  const log = document.getElementById('log');
+  const row = document.createElement('div');
+  row.className = `log-${type}`;
+  row.textContent = `${new Date().toTimeString().slice(0, 8)}  ${text}`;
+  log.appendChild(row);
+  if (++logRowCount > LOG_MAX_ROWS) {
+    log.removeChild(log.firstChild);
+    logRowCount--;
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+// ============================================================
+// 初期化
+// ============================================================
+
+// URLパラメータ ?broker=ws://192.168.1.5:9001 でブローカーを指定可能
+const params = new URLSearchParams(location.search);
+document.getElementById('brokerUrl').value =
+  params.get('broker') || 'ws://localhost:9001';
+
+buildGrid('input');
+buildGrid('output');
+</script>
+
+</body>
+</html>
