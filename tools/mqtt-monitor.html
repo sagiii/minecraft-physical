@@ -113,8 +113,25 @@
 
     .status-text { font-size: 0.875rem; color: var(--text-muted); }
 
+    /* ---- Layout ---- */
+    #sections-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      margin-bottom: 8px;
+    }
+
+    /* 横長: 左右並び */
+    @media (orientation: landscape) {
+      #sections-wrapper {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 24px;
+      }
+    }
+
     /* ---- Sections ---- */
-    .channel-section { margin-bottom: 28px; }
+    .channel-section { }
 
     .channel-section h2 {
       font-size: 1rem;
@@ -216,16 +233,35 @@
     .log-sub { color: #67e8f9; }
     .log-sys { color: #fbbf24; }
 
-    /* ---- Responsive ---- */
-    @media (max-width: 580px) {
+    /* ---- Responsive: 縦長 (portrait) ---- */
+    @media (orientation: portrait) and (max-width: 580px) {
       :root { --cell-size: 30px; --cell-font: 0.6rem; --cell-gap: 2px; }
       body { padding: 10px; }
       h1 { font-size: 1rem; }
       .cell { border-radius: 4px; }
       .connection-bar input { width: 180px; }
     }
-    @media (min-width: 581px) and (max-width: 780px) {
+    @media (orientation: portrait) and (min-width: 581px) and (max-width: 780px) {
       :root { --cell-size: 40px; --cell-font: 0.7rem; --cell-gap: 3px; }
+    }
+
+    /* ---- Responsive: 横長 (landscape) ---- */
+    /* スマホ横持ち: 幅が限られるので小さめのセル */
+    @media (orientation: landscape) and (max-width: 780px) {
+      :root { --cell-size: 28px; --cell-font: 0.58rem; --cell-gap: 2px; }
+      body { padding: 8px; }
+      h1 { font-size: 0.9rem; }
+      .cell { border-radius: 3px; }
+      .connection-bar input { width: 160px; }
+      header { margin-bottom: 12px; }
+    }
+    /* タブレット横持ち */
+    @media (orientation: landscape) and (min-width: 781px) and (max-width: 1100px) {
+      :root { --cell-size: 34px; --cell-font: 0.65rem; --cell-gap: 3px; }
+    }
+    /* デスクトップ横長 */
+    @media (orientation: landscape) and (min-width: 1101px) {
+      :root { --cell-size: 44px; --cell-font: 0.75rem; --cell-gap: 4px; }
     }
   </style>
 </head>
@@ -242,15 +278,17 @@
 </header>
 
 <main>
-  <section class="channel-section input-section">
-    <h2>INPUT チャンネル <span class="badge">UIFlow → Minecraft</span></h2>
-    <div class="grid" id="inputGrid"></div>
-  </section>
+  <div id="sections-wrapper">
+    <section class="channel-section input-section">
+      <h2>INPUT チャンネル <span class="badge">UIFlow → Minecraft</span></h2>
+      <div class="grid" id="inputGrid"></div>
+    </section>
 
-  <section class="channel-section output-section">
-    <h2>OUTPUT チャンネル <span class="badge">Minecraft → UIFlow</span></h2>
-    <div class="grid" id="outputGrid"></div>
-  </section>
+    <section class="channel-section output-section">
+      <h2>OUTPUT チャンネル <span class="badge">Minecraft → UIFlow</span></h2>
+      <div class="grid" id="outputGrid"></div>
+    </section>
+  </div>
 
   <details class="log-section">
     <summary>通信ログ</summary>
