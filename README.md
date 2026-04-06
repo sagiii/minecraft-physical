@@ -350,6 +350,53 @@ http://192.168.1.xxx:8080/tools/mqtt-monitor.html?broker=ws://192.168.1.xxx:9001
 
 ---
 
+## 対応バージョン
+
+### 動作確認済み構成
+
+| コンポーネント | バージョン |
+|---|---|
+| Minecraft Java Edition | 1.21.4 |
+| Fabric Loader | 0.16.9 |
+| Fabric API | 0.115.0+1.21.4 |
+| Java | 21 |
+| M5Stack UIFlow | v2 |
+| MicroPython | 1.21以上 |
+
+### 別バージョンのMinecraftに対応するには
+
+Fabric MODはMinecraftのバージョンに強く依存します。バージョンを変える場合は以下の手順で対応できます。
+
+**1. `mod/gradle.properties` のバージョン番号を更新する**
+
+```properties
+minecraft_version=X.XX.X          # 対象Minecraftバージョン
+yarn_mappings=X.XX.X+build.X      # 対応するYarn Mappings
+loader_version=X.X.X              # 対応するFabric Loader
+fabric_version=X.X.X+X.XX.X      # 対応するFabric API
+```
+
+各バージョンの組み合わせは [fabricmc.net/develop](https://fabricmc.net/develop/) で確認できます。
+
+**2. ビルドしてコンパイルエラーを確認する**
+
+```bash
+cd mod
+./gradlew build
+```
+
+バージョン間でAPIが変わっていた場合、コンパイルエラーが出ます。影響を受けやすい箇所は以下の3ファイルです。
+
+| ファイル | 変更されやすいAPI |
+|---|---|
+| `ChannelBlockEntity.java` | BlockEntity の登録・tick まわり |
+| `ChannelScreenHandler.java` | ScreenHandler / Slot の引数 |
+| `screen/ChannelScreen.java` | 描画API (`DrawContext` 等) |
+
+MQTTの通信ロジック (`MqttBridgeClient.java`) やM5Stack側のコードはMinecraftバージョンと無関係なので変更不要です。
+
+---
+
 ## トラブルシューティング
 
 | 症状 | 確認ポイント |
