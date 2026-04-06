@@ -25,7 +25,8 @@ MinecraftのレッドストーンとM5StackデバイスをMQTTで双方向にブ
 ```
 minecraft-physical/
 ├── mod/       Fabric MOD (Minecraft 1.21.4 / Java 21)
-└── m5flow/    M5Stack向けMicroPythonライブラリ・サンプル
+├── m5flow/    M5Stack向けMicroPythonライブラリ・サンプル
+└── tools/     ブラウザ用デバッグ・学習支援ツール
 ```
 
 ---
@@ -183,6 +184,68 @@ PCでMinecraftを動かす場合はデフォルト設定のままで動作しま
 WIFI_SSID     = 'あなたのSSID'
 WIFI_PASSWORD = 'あなたのパスワード'
 BROKER_IP     = '192.168.1.xxx'  # Step 1 で確認した PC の IP
+```
+
+---
+
+## チャンネルモニター (tools/mqtt-monitor.html)
+
+MinecraftとUIFlowの間で飛び交うMQTT信号をブラウザ上で可視化・手動送信できるツールです。
+目に見えない信号の流れを確認しながら動作を試せるため、セットアップの確認や学習に役立ちます。
+
+![チャンネルモニター](README.images/mqtt_monitor.png)
+
+### 画面構成
+
+画面は2つのグリッドに分かれており、チャンネル1〜99を一覧できます。
+
+| セクション | 色 | 対応トピック | 役割 |
+|---|---|---|---|
+| **INPUT チャンネル** (上段) | 青 | `minecraft/ch/{n}/input` | UIFlow → Minecraft の信号 |
+| **OUTPUT チャンネル** (下段) | 赤 | `minecraft/ch/{n}/state` | Minecraft → UIFlow の信号 |
+
+MQTTでメッセージが届くとそのチャンネルのマス目が点灯し、マス目をクリックすると手動で信号を送れます。
+
+### クリック操作
+
+| 操作 | 動作 |
+|---|---|
+| 左クリック / タップ | 0.5秒間だけONにしてOFFに戻す（パルス送信） |
+| 右クリック / 長押し | 現在の値をON/OFFに切り替える（トグル送信） |
+
+### 使い方
+
+**1. MosquittoにWebSocketサポートを追加**
+
+ブラウザからMQTTに接続するにはWebSocketが必要です。Mosquittoの設定ファイルに追記してください。
+
+```
+# macOS: /opt/homebrew/etc/mosquitto/mosquitto.conf
+# Linux: /etc/mosquitto/mosquitto.conf
+listener 1883
+listener 9001
+protocol websockets
+allow_anonymous true
+```
+
+```bash
+brew services restart mosquitto   # macOS
+sudo systemctl restart mosquitto  # Linux
+```
+
+**2. ツールを開く**
+
+`tools/mqtt-monitor.html` をブラウザで直接開き、接続先を入力して「接続」をクリックします。
+
+```
+ws://localhost:9001      # 同じPCから接続する場合
+ws://192.168.1.xxx:9001  # スマートフォンや別PCから接続する場合
+```
+
+スマートフォンからアクセスする場合は、URLパラメータでブローカーアドレスを指定できます。
+
+```
+http://192.168.1.xxx:8080/tools/mqtt-monitor.html?broker=ws://192.168.1.xxx:9001
 ```
 
 ---
