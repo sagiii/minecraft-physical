@@ -307,8 +307,8 @@ const PULSE_MS     = 500;  // 左クリック/タップ時のON幅 (ms)
 const LOG_MAX_ROWS = 200;  // ログの最大保持行数
 const LONG_PRESS_MS = 600; // 長押し認定までの時間 (ms, モバイル用トグル)
 
-const TOPIC_INPUT  = (ch) => `minecraft/ch/${ch}/input`;
-const TOPIC_OUTPUT = (ch) => `minecraft/ch/${ch}/state`;
+const TOPIC_INPUT  = (id) => `mp/bridge/p/sig/${id}`;   // Physical → Minecraft
+const TOPIC_OUTPUT = (id) => `mp/bridge/m/sig/${id}`;   // Minecraft → Physical
 
 // ============================================================
 // 状態 — type: 'input' | 'output', ch: 1〜MAX_CHANNEL
@@ -338,16 +338,16 @@ function toggleConnect() {
     setStatus('connected', '接続済み');
     document.getElementById('connectBtn').textContent = '切断';
     document.getElementById('connectBtn').className   = 'connected';
-    mqttClient.subscribe('minecraft/ch/+/input');
-    mqttClient.subscribe('minecraft/ch/+/state');
+    mqttClient.subscribe('mp/bridge/p/sig/+');
+    mqttClient.subscribe('mp/bridge/m/sig/+');
     addLog('sys', `接続: ${url}`);
   });
 
   mqttClient.on('message', (topic, message) => {
-    const m = topic.match(/^minecraft\/ch\/(\d+)\/(input|state)$/);
+    const m = topic.match(/^mp\/bridge\/(p|m)\/sig\/(\d+)$/);
     if (!m) return;
-    const ch   = parseInt(m[1]);
-    const type = m[2] === 'input' ? 'input' : 'output';
+    const type = m[1] === 'p' ? 'input' : 'output';
+    const ch   = parseInt(m[2]);
     const val  = parseInt(message.toString()) ? 1 : 0;
     if (ch >= 1 && ch <= MAX_CHANNEL) {
       channelState[type][ch] = val;

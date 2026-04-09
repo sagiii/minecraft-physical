@@ -39,7 +39,7 @@ btn = Pin(BTN_PIN, Pin.IN, Pin.PULL_UP)
 last_state = True  # 前回のボタン状態 (True=離している)
 
 # セットアップ
-mc_setup(WIFI_SSID, WIFI_PASSWORD, BROKER_IP)
+mc_setup(BROKER_IP, ssid=WIFI_SSID, password=WIFI_PASSWORD)
 
 print('準備完了。ボタンを押すと Minecraft にON信号を送ります。')
 

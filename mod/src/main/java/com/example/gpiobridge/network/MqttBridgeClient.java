@@ -14,11 +14,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Singleton MQTT client that bridges Minecraft channel blocks to M5Stack devices.
  *
- * Topic convention:
- *   minecraft/ch/{n}/state  — OUT block → M5Stack  (we publish)
- *   minecraft/ch/{n}/input  — M5Stack → IN block   (we subscribe)
+ * Topic convention (prefix: mp/bridge):
+ *   mp/bridge/m/sig/{id}  — OUT block → device   (we publish)
+ *   mp/bridge/p/sig/{id}  — device → IN block    (we subscribe)
  *
- * IN and OUT channels are independent — the same channel number can be used for both.
+ *   m = Minecraft world, p = Physical world
+ * IN and OUT channels are independent — the same ID can be used for both.
  */
 public class MqttBridgeClient {
     public static final MqttBridgeClient INSTANCE = new MqttBridgeClient();
@@ -84,7 +85,7 @@ public class MqttBridgeClient {
     private void subscribeToInputs() {
         try {
             // Wildcard subscription — handles all channels at once
-            client.subscribe("minecraft/ch/+/input", 0);
+            client.subscribe("mp/bridge/p/sig/+", 0);
         } catch (MqttException e) {
             System.err.println("[GPIO Bridge] Subscribe failed: " + e.getMessage());
         }
@@ -109,7 +110,7 @@ public class MqttBridgeClient {
 
     public void publish(int channel, boolean value) {
         if (client == null || !client.isConnected()) return;
-        String topic   = "minecraft/ch/" + channel + "/state";
+        String topic   = "mp/bridge/m/sig/" + channel;
         String payload = value ? "1" : "0";
         try {
             client.publish(topic, new MqttMessage(payload.getBytes()));
@@ -121,11 +122,11 @@ public class MqttBridgeClient {
     // ----- incoming messages -----
 
     private void onMessage(String topic, String payload) {
-        // Expected topic: minecraft/ch/{n}/input
+        // Expected topic: mp/bridge/p/sig/{id}
         String[] parts = topic.split("/");
-        if (parts.length != 4) return;
+        if (parts.length != 5) return;
         try {
-            int channel = Integer.parseInt(parts[2]);
+            int channel = Integer.parseInt(parts[4]);
             boolean value = "1".equals(payload) || "true".equalsIgnoreCase(payload.trim());
             dispatchToInBlock(channel, value);
         } catch (NumberFormatException ignored) {}

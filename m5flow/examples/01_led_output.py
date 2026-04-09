@@ -45,7 +45,7 @@ def on_channel_change(value):
         print('LED OFF')
 
 # セットアップ
-mc_setup(WIFI_SSID, WIFI_PASSWORD, BROKER_IP)
+mc_setup(BROKER_IP, ssid=WIFI_SSID, password=WIFI_PASSWORD)
 mc_on(CHANNEL, on_channel_change)
 
 print('待機中... Minecraft で OUTブロックにレッドストーンを入れてください')

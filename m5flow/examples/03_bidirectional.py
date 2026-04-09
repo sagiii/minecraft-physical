@@ -57,7 +57,7 @@ def on_minecraft_out(value):
 
 # ----- セットアップ -----
 
-mc_setup(WIFI_SSID, WIFI_PASSWORD, BROKER_IP)
+mc_setup(BROKER_IP, ssid=WIFI_SSID, password=WIFI_PASSWORD)
 mc_on(CH_OUT_TO_LED, on_minecraft_out)
 
 print('=== 双方向ブリッジ 起動 ===')
