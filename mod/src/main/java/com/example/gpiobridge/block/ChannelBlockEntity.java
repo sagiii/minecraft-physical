@@ -5,32 +5,32 @@ import com.example.gpiobridge.network.MqttBridgeClient;
 import com.example.gpiobridge.screen.ChannelScreenData;
 import com.example.gpiobridge.screen.ChannelScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.screen.PropertyDelegate;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<ChannelScreenData> {
 
     private int channel = 0; // 0 = unset, 1-99 = active
 
-    private final PropertyDelegate propertyDelegate = new PropertyDelegate() {
+    private final ContainerData propertyDelegate = new ContainerData() {
         @Override public int get(int index)             { return index == 0 ? channel : 0; }
         @Override public void set(int index, int value) { if (index == 0) applyChannel(value); }
-        @Override public int size()                     { return 1; }
+        @Override public int getCount()                 { return 1; }
     };
 
     public ChannelBlockEntity(BlockPos pos, BlockState state) {
@@ -41,7 +41,7 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
 
     public int getChannel() { return channel; }
 
-    /** Called both from screen (via PropertyDelegate) and from server packet handler. */
+    /** Called both from screen (via ContainerData) and from server packet handler. */
     public void setChannel(int newChannel) {
         applyChannel(newChannel);
     }
@@ -51,43 +51,43 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
         if (clamped == channel) return;
         int old = channel;
         channel = clamped;
-        if (world != null && !world.isClient) {
-            if (old > 0) MqttBridgeClient.INSTANCE.unregister(old, pos);
+        if (level != null && !level.isClientSide) {
+            if (old > 0) MqttBridgeClient.INSTANCE.unregister(old, worldPosition);
             registerWithMqtt();
-            markDirty();
-            world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+            setChanged();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
 
     @Override
-    public void setWorld(World world) {
-        super.setWorld(world);
-        if (!world.isClient && channel > 0) registerWithMqtt();
+    public void setLevel(Level level) {
+        super.setLevel(level);
+        if (!level.isClientSide && channel > 0) registerWithMqtt();
     }
 
     @Override
-    public void markRemoved() {
-        super.markRemoved();
-        if (channel > 0) MqttBridgeClient.INSTANCE.unregister(channel, pos);
+    public void setRemoved() {
+        super.setRemoved();
+        if (channel > 0) MqttBridgeClient.INSTANCE.unregister(channel, worldPosition);
     }
 
     private void registerWithMqtt() {
         if (channel <= 0) return;
-        Block block = getCachedState().getBlock();
+        Block block = getBlockState().getBlock();
         if (block instanceof ChannelInBlock) {
-            MqttBridgeClient.INSTANCE.registerIn(channel, pos);
+            MqttBridgeClient.INSTANCE.registerIn(channel, worldPosition);
         } else if (block instanceof ChannelOutBlock) {
-            MqttBridgeClient.INSTANCE.registerOut(channel, pos);
+            MqttBridgeClient.INSTANCE.registerOut(channel, worldPosition);
         }
     }
 
     // ----- called by MqttBridgeClient (server thread) -----
 
-    public void updateFromMqtt(boolean value, World world, BlockPos pos) {
+    public void updateFromMqtt(boolean value, Level world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);
         if (!(state.getBlock() instanceof ChannelInBlock)) return;
-        if (state.get(ChannelInBlock.POWERED) != value) {
-            world.setBlockState(pos, state.with(ChannelInBlock.POWERED, value));
+        if (state.getValue(ChannelInBlock.POWERED) != value) {
+            world.setBlock(pos, state.setValue(ChannelInBlock.POWERED, value), 3);
         }
     }
 
@@ -101,41 +101,43 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
     // ----- persistence -----
 
     @Override
-    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.writeNbt(nbt, registries);
+    protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
+        super.saveAdditional(nbt, registries);
         nbt.putInt("channel", channel);
     }
 
     @Override
-    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.readNbt(nbt, registries);
+    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
+        super.loadAdditional(nbt, registries);
         channel = nbt.getInt("channel");
     }
 
     @Override
-    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
+    public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return createNbt(registries);
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = new CompoundTag();
+        saveAdditional(tag, registries);
+        return tag;
     }
 
     // ----- screen factory -----
 
     @Override
-    public ChannelScreenData getScreenOpeningData(ServerPlayerEntity player) {
-        return new ChannelScreenData(pos, channel);
+    public ChannelScreenData getScreenOpeningData(ServerPlayer player) {
+        return new ChannelScreenData(worldPosition, channel);
     }
 
     @Override
-    public Text getDisplayName() {
-        return Text.translatable(getCachedState().getBlock().getTranslationKey());
+    public Component getDisplayName() {
+        return Component.translatable(getBlockState().getBlock().getDescriptionId());
     }
 
     @Override
-    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new ChannelScreenHandler(syncId, playerInventory, propertyDelegate, pos);
+    public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
+        return new ChannelScreenHandler(syncId, playerInventory, propertyDelegate, worldPosition);
     }
 }

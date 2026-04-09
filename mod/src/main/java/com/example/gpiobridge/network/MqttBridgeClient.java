@@ -2,9 +2,9 @@ package com.example.gpiobridge.network;
 
 import com.example.gpiobridge.block.ChannelBlockEntity;
 import com.example.gpiobridge.config.GpioBridgeConfig;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
@@ -137,7 +137,7 @@ public class MqttBridgeClient {
         if (pos == null || server == null) return;
         // Minecraft world updates must happen on the server thread
         server.execute(() -> {
-            ServerWorld world = server.getOverworld();
+            ServerLevel world = server.overworld();
             if (world.getBlockEntity(pos) instanceof ChannelBlockEntity be) {
                 be.updateFromMqtt(value, world, pos);
             }

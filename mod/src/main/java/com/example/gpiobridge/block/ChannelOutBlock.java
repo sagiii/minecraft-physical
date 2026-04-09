@@ -1,19 +1,21 @@
 package com.example.gpiobridge.block;
 
 import com.mojang.serialization.MapCodec;
-import net.minecraft.block.*;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityTicker;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.WireOrientation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -23,34 +25,34 @@ import org.jetbrains.annotations.Nullable;
  * Right-click to configure the channel number (1-99).
  * Lights up (luminance 15) when powered.
  */
-public class ChannelOutBlock extends BlockWithEntity {
+public class ChannelOutBlock extends BaseEntityBlock {
 
-    public static final MapCodec<ChannelOutBlock> CODEC = createCodec(ChannelOutBlock::new);
-    public static final BooleanProperty POWERED = Properties.POWERED;
+    public static final MapCodec<ChannelOutBlock> CODEC = simpleCodec(ChannelOutBlock::new);
+    public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
-    public ChannelOutBlock(Settings settings) {
+    public ChannelOutBlock(BlockBehaviour.Properties settings) {
         super(settings);
-        setDefaultState(getStateManager().getDefaultState().with(POWERED, false));
+        registerDefaultState(this.stateDefinition.any().setValue(POWERED, false));
     }
 
     @Override
-    protected MapCodec<? extends BlockWithEntity> getCodec() { return CODEC; }
+    public MapCodec<? extends BaseEntityBlock> codec() { return CODEC; }
 
     @Override
-    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(POWERED);
     }
 
     // ----- redstone input detection -----
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos,
-                                   Block sourceBlock, @Nullable WireOrientation wireOrientation,
-                                   boolean notify) {
-        if (world.isClient) return;
-        boolean powered = world.isReceivingRedstonePower(pos);
-        if (powered != state.get(POWERED)) {
-            world.setBlockState(pos, state.with(POWERED, powered), Block.NOTIFY_ALL);
+    protected void neighborChanged(BlockState state, Level world, BlockPos pos,
+                                    Block sourceBlock, @Nullable WireOrientation wireOrientation,
+                                    boolean notify) {
+        if (world.isClientSide) return;
+        boolean powered = world.hasNeighborSignal(pos);
+        if (powered != state.getValue(POWERED)) {
+            world.setBlock(pos, state.setValue(POWERED, powered), 3);
             if (world.getBlockEntity(pos) instanceof ChannelBlockEntity be) {
                 be.sendToMqtt(powered);
             }
@@ -60,25 +62,25 @@ public class ChannelOutBlock extends BlockWithEntity {
     // ----- right-click: open channel GUI -----
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos,
-                                  PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient) {
+    protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos,
+                                                Player player, BlockHitResult hit) {
+        if (!world.isClientSide) {
             if (world.getBlockEntity(pos) instanceof ChannelBlockEntity be) {
-                player.openHandledScreen(be);
+                player.openMenu(be);
             }
         }
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     // ----- block entity -----
 
     @Override
-    public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new ChannelBlockEntity(pos, state);
     }
 
     @Override
-    protected BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 }

@@ -1,24 +1,24 @@
 package com.example.gpiobridge.network;
 
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public record SetChannelPayload(BlockPos pos, int channel) implements CustomPayload {
+public record SetChannelPayload(BlockPos pos, int channel) implements CustomPacketPayload {
 
-    public static final Id<SetChannelPayload> ID =
-            new Id<>(Identifier.of("gpio_bridge", "set_channel"));
+    public static final Type<SetChannelPayload> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath("gpio_bridge", "set_channel"));
 
-    public static final PacketCodec<PacketByteBuf, SetChannelPayload> CODEC =
-            PacketCodec.tuple(
-                    BlockPos.PACKET_CODEC,    SetChannelPayload::pos,
-                    PacketCodecs.VAR_INT,     SetChannelPayload::channel,
+    public static final StreamCodec<FriendlyByteBuf, SetChannelPayload> CODEC =
+            StreamCodec.composite(
+                    BlockPos.STREAM_CODEC,    SetChannelPayload::pos,
+                    ByteBufCodecs.VAR_INT,    SetChannelPayload::channel,
                     SetChannelPayload::new
             );
 
     @Override
-    public Id<? extends CustomPayload> getId() { return ID; }
+    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

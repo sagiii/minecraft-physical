@@ -3,56 +3,54 @@ package com.example.gpiobridge;
 import com.example.gpiobridge.block.ChannelInBlock;
 import com.example.gpiobridge.block.ChannelOutBlock;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.MapColor;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.sound.BlockSoundGroup;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import java.util.function.Function;
 
 public class ModBlocks {
 
-    // Minecraft 1.21.4: Block.Settings に registryKey() を事前にセットする必要がある
     public static final Block CHANNEL_IN = register("channel_in",
             settings -> new ChannelInBlock(settings
-                    .mapColor(MapColor.LIGHT_BLUE)
-                    .luminance(state -> state.get(ChannelInBlock.POWERED) ? 15 : 0)
-                    .nonOpaque()));
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .lightLevel(state -> state.getValue(ChannelInBlock.POWERED) ? 15 : 0)
+                    .noOcclusion()));
 
     public static final Block CHANNEL_OUT = register("channel_out",
             settings -> new ChannelOutBlock(settings
-                    .mapColor(MapColor.ORANGE)
-                    .luminance(state -> state.get(ChannelOutBlock.POWERED) ? 15 : 0)
-                    .nonOpaque()));
+                    .mapColor(MapColor.COLOR_ORANGE)
+                    .lightLevel(state -> state.getValue(ChannelOutBlock.POWERED) ? 15 : 0)
+                    .noOcclusion()));
 
-    private static Block register(String name, Function<AbstractBlock.Settings, Block> factory) {
-        Identifier id = Identifier.of("gpio_bridge", name);
-        RegistryKey<Block> blockKey = RegistryKey.of(RegistryKeys.BLOCK, id);
-        RegistryKey<Item>  itemKey  = RegistryKey.of(RegistryKeys.ITEM,  id);
+    private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("gpio_bridge", name);
+        ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, id);
+        ResourceKey<Item>  itemKey  = ResourceKey.create(Registries.ITEM,  id);
 
-        // registryKey() をセットしてからブロックを生成する
-        AbstractBlock.Settings base = AbstractBlock.Settings.create()
+        BlockBehaviour.Properties base = BlockBehaviour.Properties.of()
                 .strength(1.5f)
-                .sounds(BlockSoundGroup.STONE)
-                .registryKey(blockKey);
+                .sound(SoundType.STONE)
+                .setId(blockKey);
 
         Block block = factory.apply(base);
-        Registry.register(Registries.BLOCK, blockKey, block);
-        Registry.register(Registries.ITEM,  itemKey,
-                new BlockItem(block, new Item.Settings().registryKey(itemKey)));
+        Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
+        Registry.register(BuiltInRegistries.ITEM,  itemKey,
+                new BlockItem(block, new Item.Properties().setId(itemKey)));
         return block;
     }
 
     public static void initialize() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.REDSTONE).register(entries -> {
+        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.REDSTONE_BLOCKS).register(entries -> {
             entries.add(CHANNEL_IN);
             entries.add(CHANNEL_OUT);
         });
