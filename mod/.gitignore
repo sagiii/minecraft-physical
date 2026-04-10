@@ -1,3 +1,11 @@
 .gradle/
 build/
 run/
+
+# Fabric API files extracted into mod root by Loom (not part of source)
+fabric.mod.json
+fabric-*.json
+fabric-*.classtweaker
+LICENSE-fabric-*
+assets/
+programmer_art/
