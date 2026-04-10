@@ -3,6 +3,7 @@ package com.example.gpiobridge.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.BlockGetter;
@@ -59,9 +60,9 @@ public class ChannelInBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos,
                                                 Player player, BlockHitResult hit) {
-        if (!world.isClientSide) {
+        if (!world.isClientSide()) {
             if (world.getBlockEntity(pos) instanceof ChannelBlockEntity be) {
-                player.openMenu(be);
+                ((ServerPlayer) player).openMenu(be);
             }
         }
         return InteractionResult.SUCCESS;

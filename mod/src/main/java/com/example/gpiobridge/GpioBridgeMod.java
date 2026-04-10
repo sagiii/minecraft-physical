@@ -19,10 +19,10 @@ public class GpioBridgeMod implements ModInitializer {
         ModScreenHandlers.initialize();
 
         // Register the C2S packet for setting channel number from GUI
-        PayloadTypeRegistry.playC2S().register(SetChannelPayload.TYPE, SetChannelPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(SetChannelPayload.TYPE, SetChannelPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(SetChannelPayload.TYPE, (payload, context) -> {
             context.server().execute(() -> {
-                ServerLevel world = context.player().serverLevel();
+                ServerLevel world = (ServerLevel) context.player().level();
                 if (world.getBlockEntity(payload.pos()) instanceof ChannelBlockEntity be) {
                     be.setChannel(payload.channel());
                 }

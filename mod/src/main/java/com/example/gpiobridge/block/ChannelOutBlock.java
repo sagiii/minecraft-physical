@@ -2,13 +2,14 @@ package com.example.gpiobridge.block;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.WireOrientation;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
@@ -47,9 +48,9 @@ public class ChannelOutBlock extends BaseEntityBlock {
 
     @Override
     protected void neighborChanged(BlockState state, Level world, BlockPos pos,
-                                    Block sourceBlock, @Nullable WireOrientation wireOrientation,
+                                    Block sourceBlock, @Nullable Orientation wireOrientation,
                                     boolean notify) {
-        if (world.isClientSide) return;
+        if (world.isClientSide()) return;
         boolean powered = world.hasNeighborSignal(pos);
         if (powered != state.getValue(POWERED)) {
             world.setBlock(pos, state.setValue(POWERED, powered), 3);
@@ -64,9 +65,9 @@ public class ChannelOutBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos,
                                                 Player player, BlockHitResult hit) {
-        if (!world.isClientSide) {
+        if (!world.isClientSide()) {
             if (world.getBlockEntity(pos) instanceof ChannelBlockEntity be) {
-                player.openMenu(be);
+                ((ServerPlayer) player).openMenu(be);
             }
         }
         return InteractionResult.SUCCESS;

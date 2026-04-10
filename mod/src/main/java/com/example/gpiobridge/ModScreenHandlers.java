@@ -2,10 +2,10 @@ package com.example.gpiobridge;
 
 import com.example.gpiobridge.screen.ChannelScreenData;
 import com.example.gpiobridge.screen.ChannelScreenHandler;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.MenuType;
 
 public class ModScreenHandlers {
@@ -15,8 +15,8 @@ public class ModScreenHandlers {
     public static void initialize() {
         CHANNEL_SCREEN = Registry.register(
                 BuiltInRegistries.MENU,
-                ResourceLocation.fromNamespaceAndPath("gpio_bridge", "channel_screen"),
-                new ExtendedScreenHandlerType<>(
+                Identifier.fromNamespaceAndPath("gpio_bridge", "channel_screen"),
+                new ExtendedMenuType<>(
                         ChannelScreenHandler::new,
                         ChannelScreenData.CODEC
                 )

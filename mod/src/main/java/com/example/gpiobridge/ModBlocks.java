@@ -2,12 +2,12 @@ package com.example.gpiobridge;
 
 import com.example.gpiobridge.block.ChannelInBlock;
 import com.example.gpiobridge.block.ChannelOutBlock;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -33,7 +33,7 @@ public class ModBlocks {
                     .noOcclusion()));
 
     private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory) {
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("gpio_bridge", name);
+        Identifier id = Identifier.fromNamespaceAndPath("gpio_bridge", name);
         ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, id);
         ResourceKey<Item>  itemKey  = ResourceKey.create(Registries.ITEM,  id);
 
@@ -50,9 +50,9 @@ public class ModBlocks {
     }
 
     public static void initialize() {
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.REDSTONE_BLOCKS).register(entries -> {
-            entries.add(CHANNEL_IN);
-            entries.add(CHANNEL_OUT);
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.REDSTONE_BLOCKS).register(entries -> {
+            entries.accept(CHANNEL_IN);
+            entries.accept(CHANNEL_OUT);
         });
     }
 }

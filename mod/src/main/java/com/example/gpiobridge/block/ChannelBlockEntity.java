@@ -4,11 +4,11 @@ import com.example.gpiobridge.ModBlockEntityTypes;
 import com.example.gpiobridge.network.MqttBridgeClient;
 import com.example.gpiobridge.screen.ChannelScreenData;
 import com.example.gpiobridge.screen.ChannelScreenHandler;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<ChannelScreenData> {
+public class ChannelBlockEntity extends BlockEntity implements ExtendedMenuProvider<ChannelScreenData> {
 
     private int channel = 0; // 0 = unset, 1-99 = active
 
@@ -51,7 +51,7 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
         if (clamped == channel) return;
         int old = channel;
         channel = clamped;
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             if (old > 0) MqttBridgeClient.INSTANCE.unregister(old, worldPosition);
             registerWithMqtt();
             setChanged();
@@ -62,7 +62,7 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
     @Override
     public void setLevel(Level level) {
         super.setLevel(level);
-        if (!level.isClientSide && channel > 0) registerWithMqtt();
+        if (!level.isClientSide() && channel > 0) registerWithMqtt();
     }
 
     @Override
@@ -101,15 +101,15 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
     // ----- persistence -----
 
     @Override
-    protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
-        super.saveAdditional(nbt, registries);
-        nbt.putInt("channel", channel);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.putInt("channel", channel);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
-        super.loadAdditional(nbt, registries);
-        channel = nbt.getInt("channel");
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        channel = input.getIntOr("channel", 0);
     }
 
     @Override
@@ -118,10 +118,8 @@ public class ChannelBlockEntity extends BlockEntity implements ExtendedScreenHan
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
-        saveAdditional(tag, registries);
-        return tag;
+    public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return saveCustomOnly(registries);
     }
 
     // ----- screen factory -----
