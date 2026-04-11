@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 public class ModBlocks {
 
@@ -32,8 +33,28 @@ public class ModBlocks {
                     .lightLevel(state -> state.getValue(ChannelOutBlock.POWERED) ? 15 : 0)
                     .noOcclusion()));
 
+    /**
+     * Display-only block used by CameraEntityRenderer.
+     * Not craftable, not placed in the world as a real block.
+     */
+    public static final Block CAMERA_DISPLAY = registerDisplayOnly("camera",
+            settings -> new Block(settings
+                    .mapColor(MapColor.COLOR_GRAY)
+                    .strength(-1f, 3600000f) // indestructible
+                    .noOcclusion()));
+
+    /** Register a block without a BlockItem (not obtainable, display-only model use). */
+    private static Block registerDisplayOnly(String name, Function<BlockBehaviour.Properties, Block> factory) {
+        Identifier id = Identifier.fromNamespaceAndPath("mp_bridge", name);
+        ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, id);
+        BlockBehaviour.Properties base = BlockBehaviour.Properties.of().setId(blockKey);
+        Block block = factory.apply(base);
+        Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
+        return block;
+    }
+
     private static Block register(String name, Function<BlockBehaviour.Properties, Block> factory) {
-        Identifier id = Identifier.fromNamespaceAndPath("gpio_bridge", name);
+        Identifier id = Identifier.fromNamespaceAndPath("mp_bridge", name);
         ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, id);
         ResourceKey<Item>  itemKey  = ResourceKey.create(Registries.ITEM,  id);
 

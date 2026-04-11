@@ -2,6 +2,9 @@ package com.example.gpiobridge.network;
 
 import com.example.gpiobridge.block.ChannelBlockEntity;
 import com.example.gpiobridge.config.GpioBridgeConfig;
+import com.example.gpiobridge.entity.CameraEntity;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -9,6 +12,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,8 +30,10 @@ public class MqttBridgeClient {
 
     private MqttClient client;
     // channel → block position in the overworld
-    private final Map<Integer, BlockPos> inChannels  = new ConcurrentHashMap<>();
-    private final Map<Integer, BlockPos> outChannels = new ConcurrentHashMap<>();
+    private final Map<Integer, BlockPos>    inChannels   = new ConcurrentHashMap<>();
+    private final Map<Integer, BlockPos>    outChannels  = new ConcurrentHashMap<>();
+    // camId → camera entity UUID
+    private final Map<Integer, UUID>        cameraIds    = new ConcurrentHashMap<>();
     private volatile MinecraftServer server;
 
     private MqttBridgeClient() {}
@@ -43,6 +49,7 @@ public class MqttBridgeClient {
         server = null;
         inChannels.clear();
         outChannels.clear();
+        cameraIds.clear();
         try {
             if (client != null && client.isConnected()) client.disconnect();
         } catch (MqttException ignored) {}
@@ -84,8 +91,9 @@ public class MqttBridgeClient {
 
     private void subscribeToInputs() {
         try {
-            // Wildcard subscription — handles all channels at once
+            // Wildcard subscriptions — handle all IDs at once
             client.subscribe("mp/bridge/p/sig/+", 0);
+            client.subscribe("mp/bridge/m/cam/+/ctrl", 0);
         } catch (MqttException e) {
             System.err.println("[GPIO Bridge] Subscribe failed: " + e.getMessage());
         }
@@ -106,6 +114,14 @@ public class MqttBridgeClient {
         outChannels.remove(channel, pos);
     }
 
+    public void registerCamera(int camId, CameraEntity entity) {
+        cameraIds.put(camId, entity.getUUID());
+    }
+
+    public void unregisterCamera(int camId) {
+        cameraIds.remove(camId);
+    }
+
     // ----- publishing -----
 
     public void publish(int channel, boolean value) {
@@ -119,17 +135,74 @@ public class MqttBridgeClient {
         }
     }
 
+    /** Returns true if the MQTT client is currently connected to the broker. */
+    public boolean isConnected() {
+        return client != null && client.isConnected();
+    }
+
+    /** Publish raw bytes — used by the client-side camera frame publisher. */
+    public void publishRaw(String topic, byte[] payload) {
+        if (client == null || !client.isConnected()) return;
+        try {
+            MqttMessage msg = new MqttMessage(payload);
+            msg.setQos(0);
+            client.publish(topic, msg);
+        } catch (MqttException e) {
+            System.err.println("[GPIO Bridge] Publish failed: " + e.getMessage());
+        }
+    }
+
     // ----- incoming messages -----
 
     private void onMessage(String topic, String payload) {
-        // Expected topic: mp/bridge/p/sig/{id}
-        String[] parts = topic.split("/");
-        if (parts.length != 5) return;
+        // mp/bridge/p/sig/{id}
+        if (topic.startsWith("mp/bridge/p/sig/")) {
+            String[] parts = topic.split("/");
+            if (parts.length != 5) return;
+            try {
+                int channel = Integer.parseInt(parts[4]);
+                boolean value = "1".equals(payload) || "true".equalsIgnoreCase(payload.trim());
+                dispatchToInBlock(channel, value);
+            } catch (NumberFormatException ignored) {}
+        }
+        // mp/bridge/m/cam/{id}/ctrl
+        else if (topic.startsWith("mp/bridge/m/cam/") && topic.endsWith("/ctrl")) {
+            String[] parts = topic.split("/");
+            if (parts.length != 6) return;
+            try {
+                int camId = Integer.parseInt(parts[4]);
+                dispatchCamCtrl(camId, payload);
+            } catch (NumberFormatException ignored) {}
+        }
+    }
+
+    private void dispatchCamCtrl(int camId, String jsonPayload) {
+        UUID uuid = cameraIds.get(camId);
+        if (uuid == null || server == null) return;
+        // Parse JSON using Gson (already on classpath via MC)
+        Integer width = null, height = null;
+        Float fps = null, pan = null, tilt = null, fov = null;
         try {
-            int channel = Integer.parseInt(parts[4]);
-            boolean value = "1".equals(payload) || "true".equalsIgnoreCase(payload.trim());
-            dispatchToInBlock(channel, value);
-        } catch (NumberFormatException ignored) {}
+            JsonObject obj = JsonParser.parseString(jsonPayload).getAsJsonObject();
+            if (obj.has("width"))  width  = obj.get("width").getAsInt();
+            if (obj.has("height")) height = obj.get("height").getAsInt();
+            if (obj.has("fps"))    fps    = obj.get("fps").getAsFloat();
+            if (obj.has("pan"))    pan    = obj.get("pan").getAsFloat();
+            if (obj.has("tilt"))   tilt   = obj.get("tilt").getAsFloat();
+            if (obj.has("fov"))    fov    = obj.get("fov").getAsFloat();
+        } catch (Exception e) {
+            System.err.println("[GPIO Bridge] cam ctrl parse error: " + e.getMessage());
+            return;
+        }
+        final Integer fw = width, fh = height;
+        final Float ffps = fps, fpan = pan, ftilt = tilt, ffov = fov;
+        server.execute(() -> {
+            ServerLevel world = server.overworld();
+            var entity = world.getEntity(uuid);
+            if (entity instanceof com.example.gpiobridge.entity.CameraEntity cam) {
+                cam.applyCtrl(fw, fh, ffps, fpan, ftilt, ffov);
+            }
+        });
     }
 
     private void dispatchToInBlock(int channel, boolean value) {

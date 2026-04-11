@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down":  "mp_bridge:entity/camera_side",
+    "up":    "mp_bridge:entity/camera_side",
+    "north": "mp_bridge:entity/camera_front",
+    "south": "mp_bridge:entity/camera_side",
+    "east":  "mp_bridge:entity/camera_side",
+    "west":  "mp_bridge:entity/camera_side",
+    "particle": "mp_bridge:entity/camera_side"
+  }
+}

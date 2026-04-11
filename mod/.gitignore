@@ -7,5 +7,5 @@ fabric.mod.json
 fabric-*.json
 fabric-*.classtweaker
 LICENSE-fabric-*
-assets/
+/assets/
 programmer_art/

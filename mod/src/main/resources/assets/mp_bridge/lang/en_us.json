@@ -1,0 +1,9 @@
+{
+  "block.mp_bridge.channel_in":  "Channel IN Block",
+  "block.mp_bridge.channel_out": "Channel OUT Block",
+  "gui.mp_bridge.channel_title": "Set Channel",
+  "gui.mp_bridge.channel_label": "Channel (1-99):",
+  "gui.mp_bridge.channel_hint":  "Ch: %d",
+  "entity.mp_bridge.camera":      "Camera",
+  "gui.mp_bridge.camera_id_label": "Camera ID (1-99):"
+}

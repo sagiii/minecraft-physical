@@ -10,7 +10,7 @@ import net.minecraft.resources.Identifier;
 public record SetChannelPayload(BlockPos pos, int channel) implements CustomPacketPayload {
 
     public static final Type<SetChannelPayload> TYPE =
-            new Type<>(Identifier.fromNamespaceAndPath("gpio_bridge", "set_channel"));
+            new Type<>(Identifier.fromNamespaceAndPath("mp_bridge", "set_channel"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SetChannelPayload> CODEC =
             StreamCodec.composite(

@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "mp_bridge:block/channel_out_off" },
+    "powered=true":  { "model": "mp_bridge:block/channel_out_on"  }
+  }
+}

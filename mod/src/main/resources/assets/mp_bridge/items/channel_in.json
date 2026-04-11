@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "gpio_bridge:block/channel_out_off"
+    "model": "mp_bridge:block/channel_in_off"
   }
 }

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "gpio_bridge",
+  "id": "mp_bridge",
   "version": "${version}",
-  "name": "GPIO Bridge",
-  "description": "Connects Minecraft redstone to M5Stack devices via MQTT",
+  "name": "MP Bridge",
+  "description": "Connects Minecraft world to physical devices (M5Stack etc.) via MQTT",
   "authors": [],
   "license": "MIT",
   "environment": "*",

@@ -9,7 +9,7 @@ import java.nio.file.*;
 
 public class GpioBridgeConfig {
     private static final Path CONFIG_PATH = FabricLoader.getInstance()
-            .getConfigDir().resolve("gpio_bridge.json");
+            .getConfigDir().resolve("mp_bridge.json");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Data instance;
 

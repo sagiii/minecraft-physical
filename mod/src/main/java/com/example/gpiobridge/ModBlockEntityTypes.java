@@ -14,7 +14,7 @@ public class ModBlockEntityTypes {
     public static void initialize() {
         CHANNEL_BLOCK_ENTITY = Registry.register(
                 BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                Identifier.fromNamespaceAndPath("gpio_bridge", "channel_block_entity"),
+                Identifier.fromNamespaceAndPath("mp_bridge", "channel_block_entity"),
                 FabricBlockEntityTypeBuilder.create(ChannelBlockEntity::new,
                         ModBlocks.CHANNEL_IN,
                         ModBlocks.CHANNEL_OUT

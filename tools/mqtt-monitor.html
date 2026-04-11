@@ -209,6 +209,92 @@
     }
     .cell.placeholder:hover { filter: none; }
 
+    /* ---- Camera section ---- */
+    .camera-section {
+      width: 100%;
+    }
+    .camera-section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .camera-badge { background: #14532d; color: #86efac; }
+
+    .camera-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .camera-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 260px;
+    }
+
+    .camera-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .camera-card-id {
+      font-weight: 700;
+      color: #86efac;
+      font-size: 0.9rem;
+    }
+    .camera-card canvas {
+      border-radius: 4px;
+      background: #000;
+      display: block;
+      max-width: 100%;
+    }
+    .camera-card-meta {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .camera-ctrl {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .camera-ctrl label { font-size: 0.75rem; color: var(--text-muted); }
+    .camera-ctrl input[type=range] {
+      accent-color: #86efac;
+      width: 80px;
+    }
+    .camera-ctrl button {
+      background: #166534;
+      color: #dcfce7;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .camera-ctrl button:hover { background: #15803d; }
+
+    .camera-placeholder {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 12px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+
     /* ---- Log ---- */
     details.log-section { margin-top: 8px; }
     details summary {
@@ -290,6 +376,16 @@
     </section>
   </div>
 
+  <!-- Camera preview -->
+  <section class="camera-section" style="margin-top:28px">
+    <h2>カメラプレビュー <span class="badge camera-badge">Minecraft → デバイス</span></h2>
+    <div class="camera-grid" id="cameraGrid">
+      <div class="camera-placeholder" id="cameraPlaceholder">
+        フレーム待機中… (<code>mp/bridge/m/cam/+/frame</code>)
+      </div>
+    </div>
+  </section>
+
   <details class="log-section">
     <summary>通信ログ</summary>
     <div id="log"></div>
@@ -340,19 +436,30 @@ function toggleConnect() {
     document.getElementById('connectBtn').className   = 'connected';
     mqttClient.subscribe('mp/bridge/p/sig/+');
     mqttClient.subscribe('mp/bridge/m/sig/+');
+    mqttClient.subscribe('mp/bridge/m/cam/+/frame');
     addLog('sys', `接続: ${url}`);
   });
 
   mqttClient.on('message', (topic, message) => {
-    const m = topic.match(/^mp\/bridge\/(p|m)\/sig\/(\d+)$/);
-    if (!m) return;
-    const type = m[1] === 'p' ? 'input' : 'output';
-    const ch   = parseInt(m[2]);
-    const val  = parseInt(message.toString()) ? 1 : 0;
-    if (ch >= 1 && ch <= MAX_CHANNEL) {
-      channelState[type][ch] = val;
-      renderCell(type, ch);
-      addLog('sub', `${topic}: ${val}`);
+    // --- sig チャンネル ---
+    const mSig = topic.match(/^mp\/bridge\/(p|m)\/sig\/(\d+)$/);
+    if (mSig) {
+      const type = mSig[1] === 'p' ? 'input' : 'output';
+      const ch   = parseInt(mSig[2]);
+      const val  = parseInt(message.toString()) ? 1 : 0;
+      if (ch >= 1 && ch <= MAX_CHANNEL) {
+        channelState[type][ch] = val;
+        renderCell(type, ch);
+        addLog('sub', `${topic}: ${val}`);
+      }
+      return;
+    }
+    // --- カメラフレーム ---
+    const mCam = topic.match(/^mp\/bridge\/m\/cam\/(\d+)\/frame$/);
+    if (mCam) {
+      const camId = parseInt(mCam[1]);
+      updateCameraFrame(camId, message);
+      return;
     }
   });
 
@@ -489,6 +596,102 @@ function addLog(type, text) {
     logRowCount--;
   }
   log.scrollTop = log.scrollHeight;
+}
+
+// ============================================================
+// カメラプレビュー
+// ============================================================
+
+// camId → { card, canvas, ctx, lastMs, frameCount, ctrl }
+const cameras = {};
+
+function updateCameraFrame(camId, jpegBytes) {
+  if (!cameras[camId]) {
+    createCameraCard(camId);
+  }
+  const cam = cameras[camId];
+  cam.frameCount++;
+
+  const now = Date.now();
+  const fps = cam.lastMs ? (1000 / (now - cam.lastMs)).toFixed(1) : '—';
+  cam.lastMs = now;
+
+  // Uint8Array → Blob → createObjectURL → Image → draw on canvas
+  const blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+  const url  = URL.createObjectURL(blob);
+  const img  = new Image();
+  img.onload = () => {
+    const c = cam.canvas;
+    // Auto-resize canvas to match first frame
+    if (c.width !== img.naturalWidth || c.height !== img.naturalHeight) {
+      c.width  = img.naturalWidth;
+      c.height = img.naturalHeight;
+    }
+    cam.ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    const kb = (jpegBytes.length / 1024).toFixed(1);
+    cam.metaEl.textContent =
+      `${img.naturalWidth}×${img.naturalHeight} | ${fps} fps | ${kb} KB | #${cam.frameCount}`;
+  };
+  img.onerror = () => URL.revokeObjectURL(url);
+  img.src = url;
+
+  addLog('sub', `cam/${camId}/frame ${(jpegBytes.length / 1024).toFixed(1)}KB`);
+}
+
+function createCameraCard(camId) {
+  document.getElementById('cameraPlaceholder').style.display = 'none';
+
+  const card = document.createElement('div');
+  card.className = 'camera-card';
+  card.id = `cam-card-${camId}`;
+
+  const header = document.createElement('div');
+  header.className = 'camera-card-header';
+  header.innerHTML = `<span class="camera-card-id">カメラ #${camId}</span>`;
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = 240;
+  canvas.height = 135;
+
+  const meta = document.createElement('div');
+  meta.className = 'camera-card-meta';
+  meta.textContent = '受信待機中…';
+
+  // ctrl パネル
+  const ctrl = document.createElement('div');
+  ctrl.className = 'camera-ctrl';
+  ctrl.innerHTML = `
+    <label>FPS <input type="range" min="0.2" max="10" step="0.2" value="1.0"
+      oninput="this.nextElementSibling.textContent=this.value"
+      id="fps-${camId}"><span>1.0</span></label>
+    <label>FOV <input type="range" min="10" max="170" step="5" value="70"
+      oninput="this.nextElementSibling.textContent=this.value"
+      id="fov-${camId}"><span>70</span></label>
+    <button onclick="sendCtrl(${camId})">送信</button>
+  `;
+
+  card.append(header, canvas, meta, ctrl);
+  document.getElementById('cameraGrid').appendChild(card);
+
+  cameras[camId] = {
+    card, canvas,
+    ctx: canvas.getContext('2d'),
+    metaEl: meta,
+    lastMs: null,
+    frameCount: 0,
+  };
+}
+
+function sendCtrl(camId) {
+  if (!mqttClient || !mqttClient.connected) return;
+  const fps = parseFloat(document.getElementById(`fps-${camId}`).value);
+  const fov = parseFloat(document.getElementById(`fov-${camId}`).value);
+  const payload = JSON.stringify({ width: 240, height: 135, fps, fov,
+                                   pan: 0.0, tilt: 0.0 });
+  const topic = `mp/bridge/m/cam/${camId}/ctrl`;
+  mqttClient.publish(topic, payload);
+  addLog('pub', `${topic}: ${payload}`);
 }
 
 // ============================================================

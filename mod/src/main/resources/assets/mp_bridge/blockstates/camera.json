@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "mp_bridge:block/camera" }
+  }
+}
